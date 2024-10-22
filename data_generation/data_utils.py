@@ -75,6 +75,7 @@ FORMATTED_ALGORITHMS = {
 TRAIN_TEST_SPLIT = {
     3: [4,4],
     5: [10,10], 
+    7: [10,10], 
     8: [10, 10], 
     10: [10,10]
 }
@@ -114,6 +115,10 @@ def json_to_string(data):
     
     return {"content": output_string.strip()}
     
+def hash_edgelist(edgelist):
+    canonicalEdges = sorted([str(sorted(edge)) for edge in edgelist])  # Canonical form and sort
+    return hash(",".join(canonicalEdges))
+
 def write_chat_format(reasoning_strategy, data_sect, data, context_window=-1):
     chat_data = []
         
@@ -137,13 +142,13 @@ def write_chat_format(reasoning_strategy, data_sect, data, context_window=-1):
                 role = "user"
             
             hints = execution_step + "\n" if (("IS" in reasoning_strategy or not "IO" in reasoning_strategy) and data_sect != "evaluation") or i % 2 == 1 else ""
-  
+            
             if i == 0:
                 if source_node == "":
-                    content = f"Please perform the {FORMATTED_ALGORITHMS[algorithm]['name']} algorithm for {FORMATTED_ALGORITHMS[algorithm]['goal']} on the following graph: Edgelist: [{','.join([str(tuple(edge)) for edge in edge_list])}]{FORMATTED_ALGORITHMS[algorithm]['output_format']}{REASONING_STRATEGIES[reasoning_strategy]}.\n{hints}\n{FORMATTED_ALGORITHMS[algorithm]['instruction']}"
-                    init_prompt = f"Please perform the {FORMATTED_ALGORITHMS[algorithm]['name']} algorithm for {FORMATTED_ALGORITHMS[algorithm]['goal']} on the following graph: Edgelist: [{','.join([str(tuple(edge)) for edge in edge_list])}]"
+                    content = f"Please perform the {FORMATTED_ALGORITHMS[algorithm]['name']} algorithm for {FORMATTED_ALGORITHMS[algorithm]['goal']} on the graph represented in the attached image. {FORMATTED_ALGORITHMS[algorithm]['output_format']}{REASONING_STRATEGIES[reasoning_strategy]}.\n{hints}\n{FORMATTED_ALGORITHMS[algorithm]['instruction']}"
+                    init_prompt = f"Please perform the {FORMATTED_ALGORITHMS[algorithm]['name']} algorithm for {FORMATTED_ALGORITHMS[algorithm]['goal']} on the graph represented in the attached image."
                 else:
-                    content = f"Please perform the {FORMATTED_ALGORITHMS[algorithm]['name']} algorithm for {FORMATTED_ALGORITHMS[algorithm]['goal']} on the following graph: Edgelist: [{','.join([str(tuple(edge)) for edge in edge_list])}]; Source Node: {str(source_node)}{FORMATTED_ALGORITHMS[algorithm]['output_format']}{REASONING_STRATEGIES[reasoning_strategy]}.\n{hints}\n{FORMATTED_ALGORITHMS[algorithm]['instruction']}"
+                    content = f"Please perform the {FORMATTED_ALGORITHMS[algorithm]['name']} algorithm for {FORMATTED_ALGORITHMS[algorithm]['goal']} on the graph represented in the attached image; Source Node: {str(source_node)}{FORMATTED_ALGORITHMS[algorithm]['output_format']}{REASONING_STRATEGIES[reasoning_strategy]}.\n{hints}\n{FORMATTED_ALGORITHMS[algorithm]['instruction']}"
                     init_prompt = content
             elif i + 1 >= len(data[idx]["hints"]):
                 if algorithm in ["bfs"]:
@@ -163,13 +168,13 @@ def write_chat_format(reasoning_strategy, data_sect, data, context_window=-1):
         if context_window == -1:
             datapoint = {
                         "traj_id": f"{idx}",
+                        "image": f"./{data_sect}/images/image_{idx}.png",
                         'prompt': init_prompt, 
                         'messages': llama_data_inst,
                     }
             # chat_data.append(datapoint if not "mistral" in output_format else json_to_string(datapoint))
             chat_data.append(datapoint)
         else:
-
             windows = []
                  
             loop_start = - (2* context_window) + 2
@@ -194,13 +199,14 @@ def write_chat_format(reasoning_strategy, data_sect, data, context_window=-1):
 
                 datapoint = {
                         "traj_id": f"{idx}.{i}",
+                        "image": f"./{data_sect}/images/image_{idx}.png",
                         'prompt': init_prompt, 
                         'messages': window,
                     }
                 
                 # chat_data.append(datapoint if not "mistral" in output_format else json_to_string(datapoint))
                 chat_data.append(datapoint)
-    write_json(f"/local2/ataylor2/algorithmic_reasoning/data_samples/{data_sect}_sample.json", chat_data)
+    write_json(f"./data_samples/{data_sect}_sample.json", chat_data)
         
     return chat_data
 
@@ -273,11 +279,11 @@ def parse_args():
     # Add arguments
     parser.add_argument("algorithm", type=str, choices=['bfs', 'dfs', 'dijkstra', 'floyd_warshall', 'mst_prim', 'all'], 
                         help="Algorithm must be one of: 'bfs', 'dfs', 'dijkstra', 'floyd_warshall', or 'mst_prim.")
-    parser.add_argument("-graph_sizes", "--graph_sizes", type=list, default=[5,6,7,8,9,10,11,12,13,14,15,20,50], help="Number of nodes present in the graphs generated. Default behavior sets num_samples to the number of training datapoints.")
+    parser.add_argument("-graph_sizes", "--graph_sizes", type=list, default=[3,5,7,8,10], help="Number of nodes present in the graphs generated. Default behavior sets num_samples to the number of training datapoints.")
     parser.add_argument("-num_samples", "--num_samples", type=int, default=-1, help="Number of data samples to generate.")
     parser.add_argument("-neg_edges", "--neg_edges", type=bool, default=True, help="Include negative edges, ex. '0 is not reachable from 1'.")
     parser.add_argument("-seed", "--seed", type=int, default=100898, help="Random seed used in constructing the CLRS sampler; the default is 10081998.")
-    parser.add_argument("-output_dir", "--output_dir", type=str, default="/local/ataylor2/algorithmic_reasoning", help="Output directory. Will create folders named after the algorithm for which data is generated.")
+    parser.add_argument("-output_dir", "--output_dir", type=str, default="./data_samples/", help="Output directory. Will create folders named after the algorithm for which data is generated.")
     parser.add_argument("-train_test_split", "--train_test_split", type=list, default=[1000,100], help="Training/Testing split ratios. The Test set will be equally split into Validation and Test.")
     parser.add_argument("-output_formats", "--output_formats", type=list, default=["vanilla", "chat"], choices=OUTPUT_FORMATS, help="Output format for dataset")
     parser.add_argument("-window_sizes", "--window_sizes", type=list, default=[1,2,5], help="Window sizes for intermediate steps with shorter context windows")

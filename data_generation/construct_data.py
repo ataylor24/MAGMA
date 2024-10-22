@@ -447,22 +447,16 @@ def _translate_inputs(alg, inputs):
     else:
         raise NotImplementedError(f"No input translation functionality has been implemented for {alg}")
 
-def hash_edgelist(edgelist):
-    canonicalEdges = sorted([str(sorted(edge)) for edge in edgelist])  # Canonical form and sort
-    return hash(",".join(canonicalEdges))  # Convert to unique representation
-
-def get_graph_images(edgelist, graph_size): 
+def get_graph_images(edgelist, graph_size, output_dir, traj_id): 
     G = nx.Graph()
     G.add_nodes_from(range(graph_size))
     G.add_edges_from(edgelist)
 
-    # G = nx.from_edgelist(edgelist)
-    # pos = nx.circular_layout(G)#, seed=42)
     angle_step = 2*np.pi/graph_size
     fixed_positions = {i: (np.cos(i*angle_step), np.sin(i*angle_step)) for i in range(graph_size)}
 
     plt.figure(figsize=(6, 6))
-    nx.draw(G, pos=fixed_positions, with_labels=True, node_color='skyblue', node_size=500, edge_color='gray', font_weight='bold')
+    nx.draw(G, pos=fixed_positions, with_labels=True, node_color='teal', node_size=500, edge_color='gray', font_weight='bold')
 
     plt.xlim(-1.25, 1.25)
     plt.ylim(-1.25, 1.25)
@@ -470,8 +464,8 @@ def get_graph_images(edgelist, graph_size):
     plt.gca().set_aspect('equal')
     plt.axis('off')
 
-    dirname = f"test_data/images/size_{graph_size}" 
-    filename = f"{hash_edgelist(edgelist)}.png"
+    dirname = f"{output_dir}/images" 
+    filename = f"image_{traj_id}.png"
     basedir = os.path.dirname(os.path.join(dirname, filename))
     if not os.path.exists(basedir): 
         os.makedirs(basedir)
@@ -510,10 +504,9 @@ def sample_data(args):
             
             inputs = _translate_inputs(args.algorithm, train_sample.features.inputs)
             
-            edgelist_hash = hash_edgelist(inputs[1])
+            edgelist_hash = data_utils.hash_edgelist(inputs[1])
             if edgelist_hash in unique_graphs:
                 continue
-            get_graph_images(inputs[1], graph_size)
             
             if args.algorithm in ["floyd_warshall", "dijkstra", "mst_prim", "dfs"]:
                 hints, final_d = translate_hints(args.algorithm, args.neg_edges, set(inputs[1]), train_sample.features.hints, source=inputs[2])
@@ -532,12 +525,14 @@ def sample_data(args):
             }
             
             unique_graphs.add(edgelist_hash)
+            for r in data_utils.REASONING_STRATEGIES: 
+                get_graph_images(inputs[1], graph_size, dict_llm_data_dir['chat']+"/"+r+"/train", valid_train_idx)
             valid_train_idx += 1
         while valid_eval_idx < evaluation_instances:
             test_sample = next(data_smp_iter)
             inputs = _translate_inputs(args.algorithm, test_sample.features.inputs)
             
-            edgelist_hash = hash_edgelist(inputs[1])
+            edgelist_hash = data_utils.hash_edgelist(inputs[1])
             if edgelist_hash in unique_graphs:
                 continue
 
@@ -569,6 +564,8 @@ def sample_data(args):
                 }
             
             unique_graphs.add(edgelist_hash)
+            for r in data_utils.REASONING_STRATEGIES: 
+                get_graph_images(inputs[1], graph_size, dict_llm_data_dir['chat']+"/"+r+"/test", valid_eval_idx)
             valid_eval_idx += 1
         print(f"Sampling complete for graph size: {graph_size}")
         
