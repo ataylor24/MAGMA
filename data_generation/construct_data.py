@@ -6,6 +6,8 @@ import json
 import dill
 import data_utils
 from datasets import Dataset, DatasetDict
+import networkx as nx
+import matplotlib.pyplot as plt
        
 def _iterate_sampler(sampler, batch_size):
         while True:
@@ -437,6 +439,36 @@ def hash_edgelist(edgelist):
     canonicalEdges = sorted([str(sorted(edge)) for edge in edgelist])  # Canonical form and sort
     return hash(",".join(canonicalEdges))  # Convert to unique representation
 
+def get_graph_images(edgelist, graph_size): 
+    G = nx.Graph()
+    G.add_nodes_from(range(graph_size))
+    G.add_edges_from(edgelist)
+
+    # G = nx.from_edgelist(edgelist)
+    # pos = nx.circular_layout(G)#, seed=42)
+    angle_step = 2*np.pi/graph_size
+    fixed_positions = {i: (np.cos(i*angle_step), np.sin(i*angle_step)) for i in range(graph_size)}
+
+    plt.figure(figsize=(6, 6))
+    nx.draw(G, pos=fixed_positions, with_labels=True, node_color='skyblue', node_size=500, edge_color='gray', font_weight='bold')
+
+    plt.xlim(-1.25, 1.25)
+    plt.ylim(-1.25, 1.25)
+
+    plt.gca().set_aspect('equal')
+    plt.axis('off')
+
+    dirname = f"test_data/images/size_{graph_size}" 
+    filename = f"{hash_edgelist(edgelist)}.png"
+    basedir = os.path.dirname(os.path.join(dirname, filename))
+    if not os.path.exists(basedir): 
+        os.makedirs(basedir)
+
+    with open(dirname+"/"+filename, "w") as p: 
+        pass 
+    plt.savefig(dirname+"/"+filename)
+    plt.close()
+
 def sample_data(args):
     clrs_training_data = {}
     clrs_validation_data = {}
@@ -469,6 +501,7 @@ def sample_data(args):
             edgelist_hash = hash_edgelist(inputs[1])
             if edgelist_hash in unique_graphs:
                 continue
+            get_graph_images(inputs[1], graph_size)
             
             if args.algorithm in ["floyd_warshall", "dijkstra", "mst_prim", "dfs"]:
                 hints, final_d = translate_hints(args.algorithm, args.neg_edges, set(inputs[1]), train_sample.features.hints, source=inputs[2])
