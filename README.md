@@ -1,5 +1,8 @@
 # MAGMA: Multistep AlgorithMic Reasoning Benchmark
 
+## Paper
+Are Large-Language Models Graph Algorithmic Reasoners? [pdf][https://arxiv.org/pdf/2410.22597]
+
 ## Summary
 
 The MAGMA Benchmark is designed to evaluate the performance of large language models (LLMs) on classical graph algorithms using intermediate steps. Despite advances in LLMs, they exhibit significant limitations in structured, multistep reasoning tasks, particularly those involving explicit graph structures. Our benchmark addresses this gap by evaluating state-of-the-art LLMs on five fundamental algorithms: BFS, DFS, Dijkstra's, Floyd-Warshall, and Prim's MST.
@@ -41,7 +44,7 @@ This will create a new Conda environment with all the dependencies specified in 
 Activate the newly created environment using:
 
 ```bash
-conda activate llm_gar
+conda activate nar2
 ```
 
 ### Training baseline models
@@ -61,14 +64,20 @@ bash inference_scripts/bfs_CoT.sh
 
 ### Configuration
 
-You can customize the benchmark settings using the configuration file `configuration_example/config_qlora.yaml`.
+You can customize the model training settings using the configuration file `configuration_example/config_qlora.yaml`.
 
 ## Performance Metrics
 
-The benchmark evaluates the following metrics:
+The benchmark uses the following metrics:
+- **Exact Match Accuracy:** Measures the correctness of the final output. (Primary metric used in the paper)
+- **F1 Score** Measures the partial correcness of the final output.
+Note: We also include 'partial' accuracies that provide credit for outputs that are similar to the desired output but lack the full response template.
 
-- **Exact Match Accuracy:** Measures the correctness of the final output.
-- **Intermediate Steps Accuracy:** Evaluates the accuracy of intermediate steps.
+For both the Exact Match Accuracy and F1 score metrics, we provide the following variants:
+- **Intermediate Steps Accuracy:** Evaluates the performance of models on intermediate steps.
+- **Final Step Accuracy** Evaluates the performance of models on only the final step.
+- **Trajectory Accuracy** Evaluates the performance of models on the full trajectory (i.e. intermediate steps & final step)
+- **Independent Accuracy** Evaluates the performance of models on each independent inference (trajectory agnostic).
 
 ## Contributing
 
