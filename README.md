@@ -1,4 +1,4 @@
-# MAGMA: Multistep AlgorithMic Reasoning Benchmark
+# MAGMA: Multistep AlGorithMic ReAsoning Benchmark
 
 ## Paper
 Are Large-Language Models Graph Algorithmic Reasoners? [[pdf](https://arxiv.org/pdf/2410.22597)]
