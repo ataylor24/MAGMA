@@ -1,6 +1,6 @@
 # MAGMA: Multistep AlGorithMic ReAsoning Benchmark
 
-🎉🎉PLEASE SEE THE UPDATED VERSION HERE: https://github.com/ataylor24/MAGMA_v2/blob/main/README.md🎉🎉
+🎉🎉PLEASE SEE THE UPDATED VERSION HERE: https://github.com/ataylor24/MAGMA_v2🎉🎉
 
 ## Paper
 Are Large-Language Models Graph Algorithmic Reasoners? [[pdf](https://arxiv.org/pdf/2410.22597)]
